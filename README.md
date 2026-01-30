@@ -1,21 +1,74 @@
-# IntelliJ Platform Plugin Template
+# VariosAI Chat Plugin
 
-[![official JetBrains project](https://jb.gg/badges/official.svg)][jb:github]
-[![Twitter Follow](https://img.shields.io/badge/follow-%40JBPlatform-1DA1F2?logo=twitter)](https://x.com/JBPlatform)
-[![Build](https://github.com/JetBrains/intellij-platform-plugin-template/workflows/Build/badge.svg)][gh:build]
+[![Build](https://github.com/alexi-courieux/variosAIChat/workflows/Build/badge.svg)][gh:build]
 
-![IntelliJ Platform Plugin Template][file:intellij-platform-plugin-template-dark]
-![IntelliJ Platform Plugin Template][file:intellij-platform-plugin-template-light]
+![VariosAI Chat Plugin]
 
-> [!NOTE]
-> Click the <kbd>Use this template</kbd> button and clone it in IntelliJ IDEA.
+> An IntelliJ IDEA plugin that provides a tool window for interacting with variosAI or any OpenAI-compatible API.
 
 <!-- Plugin description -->
-**IntelliJ Platform Plugin Template** is a repository that provides a pure template to make it easier to create a new plugin project (check the [Creating a repository from a template][gh:template] article).
+**VariosAI Chat** is an IntelliJ IDEA plugin that adds a dedicated tool window for AI-powered assistance. Configure your own AI endpoint (variosAI or any OpenAI-compatible API) and interact with it directly from your IDE. The plugin supports referencing your currently open file in prompts, making it perfect for code reviews, explanations, and enhancements.
 
-The main goal of this template is to speed up the setup phase of plugin development for both new and experienced developers by preconfiguring the project scaffold and CI, linking to the proper documentation pages, and keeping everything organized.
+## Features
 
-[gh:template]: https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template
+- 🔧 **Configurable API Connection**: Set your own base URL, API key, and model ID
+- 💬 **Interactive Chat Interface**: Multi-line prompt input with response display
+- 📄 **File Reference**: Optionally include the currently opened file's content in your prompts
+- 🔒 **Secure**: API keys are masked and never persisted to disk
+- ⚡ **Non-blocking**: All API calls run on background threads to keep the IDE responsive
+- ✅ **Error Handling**: Comprehensive validation and user-friendly error messages
+
+## Installation
+
+### From Source
+
+1. Clone this repository
+2. Run `./gradlew buildPlugin`
+3. Install the plugin from disk: `build/distributions/VariosAI-Chat-*.zip`
+
+### From JetBrains Marketplace
+
+Coming soon!
+
+## Usage
+
+1. Open the **VariosAI Chat** tool window from the right sidebar
+2. Configure your API settings:
+   - **Base URL**: Your variosAI endpoint (e.g., `https://api.openai.com/v1/chat/completions`)
+   - **API Key**: Your authentication token
+   - **Model ID**: The model to use (e.g., `gpt-3.5-turbo`)
+3. Enter your prompt in the text area
+4. (Optional) Check "Reference opened file" to include the current file's content
+5. Click **Submit** to send your request
+6. View the response in the area below
+
+## API Format
+
+The plugin sends HTTP POST requests in this format:
+
+```bash
+POST {baseUrl}
+Headers:
+  Content-Type: application/json
+  Authorization: Bearer {apiKey}
+
+Body:
+{
+  "model": "{modelId}",
+  "messages": [
+    {"role": "user", "content": "{prompt}"}
+  ]
+}
+```
+
+When "Reference opened file" is checked, the file content is appended to the prompt.
+
+## Documentation
+
+- [SUMMARY.md](SUMMARY.md) - Complete implementation overview and features
+- [VARIOSAI_IMPLEMENTATION.md](VARIOSAI_IMPLEMENTATION.md) - Technical implementation guide
+- [UI_LAYOUT.md](UI_LAYOUT.md) - Visual UI documentation and workflow
+
 <!-- Plugin description end -->
 
 If you're still not quite sure what this is all about, read our introduction: [What is the IntelliJ Platform?][docs:intro]
