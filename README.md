@@ -1,28 +1,74 @@
-# variosAIChat
+# VariosAI Chat Plugin
 
-![Build](https://github.com/alexi-courieux/variosAIChat/workflows/Build/badge.svg)
-[![Version](https://img.shields.io/jetbrains/plugin/v/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
+[![Build](https://github.com/alexi-courieux/variosAIChat/workflows/Build/badge.svg)][gh:build]
 
-## Template ToDo list
-- [x] Create a new [IntelliJ Platform Plugin Template][template] project.
-- [ ] Get familiar with the [template documentation][template].
-- [ ] Adjust the [pluginGroup](./gradle.properties) and [pluginName](./gradle.properties), as well as the [id](./src/main/resources/META-INF/plugin.xml) and [sources package](./src/main/kotlin).
-- [ ] Adjust the plugin description in `README` (see [Tips][docs:plugin-description])
-- [ ] Review the [Legal Agreements](https://plugins.jetbrains.com/docs/marketplace/legal-agreements.html?from=IJPluginTemplate).
-- [ ] [Publish a plugin manually](https://plugins.jetbrains.com/docs/intellij/publishing-plugin.html?from=IJPluginTemplate) for the first time.
-- [ ] Set the `MARKETPLACE_ID` in the above README badges. You can obtain it once the plugin is published to JetBrains Marketplace.
-- [ ] Set the [Plugin Signing](https://plugins.jetbrains.com/docs/intellij/plugin-signing.html?from=IJPluginTemplate) related [secrets](https://github.com/JetBrains/intellij-platform-plugin-template#environment-variables).
-- [ ] Set the [Deployment Token](https://plugins.jetbrains.com/docs/marketplace/plugin-upload.html?from=IJPluginTemplate).
-- [ ] Click the <kbd>Watch</kbd> button on the top of the [IntelliJ Platform Plugin Template][template] to be notified about releases containing new features and fixes.
-- [ ] Configure the [CODECOV_TOKEN](https://docs.codecov.com/docs/quick-start) secret for automated test coverage reports on PRs
+![VariosAI Chat Plugin]
+
+> An IntelliJ IDEA plugin that provides a tool window for interacting with variosAI or any OpenAI-compatible API.
 
 <!-- Plugin description -->
-This Fancy IntelliJ Platform Plugin is going to be your implementation of the brilliant ideas that you have.
+**VariosAI Chat** is an IntelliJ IDEA plugin that adds a dedicated tool window for AI-powered assistance. Configure your own AI endpoint (variosAI or any OpenAI-compatible API) and interact with it directly from your IDE. The plugin supports referencing your currently open file in prompts, making it perfect for code reviews, explanations, and enhancements.
 
-This specific section is a source for the [plugin.xml](/src/main/resources/META-INF/plugin.xml) file which will be extracted by the [Gradle](/build.gradle.kts) during the build process.
+## Features
 
-To keep everything working, do not remove `<!-- ... -->` sections. 
+- 🔧 **Configurable API Connection**: Set your own base URL, API key, and model ID
+- 💬 **Interactive Chat Interface**: Multi-line prompt input with response display
+- 📄 **File Reference**: Optionally include the currently opened file's content in your prompts
+- 🔒 **Secure**: API keys are masked and never persisted to disk
+- ⚡ **Non-blocking**: All API calls run on background threads to keep the IDE responsive
+- ✅ **Error Handling**: Comprehensive validation and user-friendly error messages
+
+## Installation
+
+### From Source
+
+1. Clone this repository
+2. Run `./gradlew buildPlugin`
+3. Install the plugin from disk: `build/distributions/VariosAI-Chat-*.zip`
+
+### From JetBrains Marketplace
+
+Coming soon!
+
+## Usage
+
+1. Open the **VariosAI Chat** tool window from the right sidebar
+2. Configure your API settings:
+   - **Base URL**: Your variosAI endpoint (e.g., `https://api.openai.com/v1/chat/completions`)
+   - **API Key**: Your authentication token
+   - **Model ID**: The model to use (e.g., `gpt-3.5-turbo`)
+3. Enter your prompt in the text area
+4. (Optional) Check "Reference opened file" to include the current file's content
+5. Click **Submit** to send your request
+6. View the response in the area below
+
+## API Format
+
+The plugin sends HTTP POST requests in this format:
+
+```bash
+POST {baseUrl}
+Headers:
+  Content-Type: application/json
+  Authorization: Bearer {apiKey}
+
+Body:
+{
+  "model": "{modelId}",
+  "messages": [
+    {"role": "user", "content": "{prompt}"}
+  ]
+}
+```
+
+When "Reference opened file" is checked, the file content is appended to the prompt.
+
+## Documentation
+
+- [SUMMARY.md](SUMMARY.md) - Complete implementation overview and features
+- [VARIOSAI_IMPLEMENTATION.md](VARIOSAI_IMPLEMENTATION.md) - Technical implementation guide
+- [UI_LAYOUT.md](UI_LAYOUT.md) - Visual UI documentation and workflow
+
 <!-- Plugin description end -->
 
 ## Installation
