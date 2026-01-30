@@ -1,5 +1,6 @@
 package org.jetbrains.plugins.template.toolWindow
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
@@ -20,6 +21,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import javax.swing.JButton
 import javax.swing.JCheckBox
+import javax.swing.JPasswordField
 import javax.swing.JTextField
 
 class VariosAIToolWindowFactory : ToolWindowFactory {
@@ -35,11 +37,12 @@ class VariosAIToolWindowFactory : ToolWindowFactory {
     class VariosAIToolWindow(private val project: Project) {
 
         private val baseUrlField = JTextField("https://api.openai.com/v1/chat/completions", 30)
-        private val apiKeyField = JTextField("", 30)
+        private val apiKeyField = JPasswordField(30)
         private val modelIdField = JTextField("gpt-3.5-turbo", 20)
         private val promptArea = JBTextArea(10, 40)
         private val referenceFileCheckbox = JCheckBox(MyBundle.message("variosai.referenceFile"))
         private val responseArea = JBTextArea(15, 40)
+        private val submitButton = JButton(MyBundle.message("variosai.submit"))
 
         fun getContent() = JBPanel<JBPanel<*>>(BorderLayout()).apply {
             val mainPanel = JBPanel<JBPanel<*>>(GridBagLayout())
@@ -95,7 +98,6 @@ class VariosAIToolWindowFactory : ToolWindowFactory {
 
             // Submit button
             gbc.gridy = 5
-            val submitButton = JButton(MyBundle.message("variosai.submit"))
             submitButton.addActionListener {
                 submitPrompt()
             }
@@ -115,7 +117,7 @@ class VariosAIToolWindowFactory : ToolWindowFactory {
 
         private fun submitPrompt() {
             val baseUrl = baseUrlField.text.trim()
-            val apiKey = apiKeyField.text.trim()
+            val apiKey = String(apiKeyField.password).trim()
             val modelId = modelIdField.text.trim()
             var promptContent = promptArea.text.trim()
 
@@ -145,14 +147,27 @@ class VariosAIToolWindowFactory : ToolWindowFactory {
                 }
             }
 
-            // Make API call
-            try {
-                responseArea.text = MyBundle.message("variosai.sending")
-                val response = callVariosAI(baseUrl, apiKey, modelId, promptContent)
-                responseArea.text = response
-            } catch (e: Exception) {
-                responseArea.text = "${MyBundle.message("variosai.error.apiCall")}\n${e.message}"
-                Messages.showErrorDialog(project, e.message ?: "Unknown error", MyBundle.message("variosai.error.title"))
+            // Disable submit button and show loading message
+            submitButton.isEnabled = false
+            responseArea.text = MyBundle.message("variosai.sending")
+
+            // Make API call on background thread
+            val finalPromptContent = promptContent
+            ApplicationManager.getApplication().executeOnPooledThread {
+                try {
+                    val response = callVariosAI(baseUrl, apiKey, modelId, finalPromptContent)
+                    ApplicationManager.getApplication().invokeLater {
+                        responseArea.text = response
+                        submitButton.isEnabled = true
+                    }
+                } catch (e: Exception) {
+                    ApplicationManager.getApplication().invokeLater {
+                        val errorMessage = "${MyBundle.message("variosai.error.apiCall")}\n${e.message}"
+                        responseArea.text = errorMessage
+                        Messages.showErrorDialog(project, e.message ?: "Unknown error", MyBundle.message("variosai.error.title"))
+                        submitButton.isEnabled = true
+                    }
+                }
             }
         }
 
@@ -171,13 +186,12 @@ class VariosAIToolWindowFactory : ToolWindowFactory {
                 connection.setRequestProperty("Content-Type", "application/json")
                 connection.setRequestProperty("Authorization", "Bearer $apiKey")
                 connection.doOutput = true
+                
+                // Set timeouts to prevent hanging
+                connection.connectTimeout = 30000 // 30 seconds
+                connection.readTimeout = 60000 // 60 seconds
 
-                val requestBody = """
-                    {
-                        "model": "${escapeJson(modelId)}",
-                        "messages": [{"role": "user", "content": "${escapeJson(prompt)}"}]
-                    }
-                """.trimIndent()
+                val requestBody = buildJsonRequest(modelId, prompt)
 
                 OutputStreamWriter(connection.outputStream).use { writer ->
                     writer.write(requestBody)
@@ -200,13 +214,35 @@ class VariosAIToolWindowFactory : ToolWindowFactory {
             }
         }
 
-        private fun escapeJson(text: String): String {
-            return text
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t")
+        private fun buildJsonRequest(modelId: String, prompt: String): String {
+            // Build JSON manually with proper escaping
+            return """{"model":${escapeJsonString(modelId)},"messages":[{"role":"user","content":${escapeJsonString(prompt)}}]}"""
+        }
+
+        private fun escapeJsonString(text: String): String {
+            val escaped = StringBuilder()
+            escaped.append('"')
+            for (char in text) {
+                when (char) {
+                    '"' -> escaped.append("\\\"")
+                    '\\' -> escaped.append("\\\\")
+                    '\n' -> escaped.append("\\n")
+                    '\r' -> escaped.append("\\r")
+                    '\t' -> escaped.append("\\t")
+                    '\b' -> escaped.append("\\b")
+                    '\u000C' -> escaped.append("\\f") // form feed
+                    else -> {
+                        if (char < ' ') {
+                            // Escape other control characters
+                            escaped.append(String.format("\\u%04x", char.code))
+                        } else {
+                            escaped.append(char)
+                        }
+                    }
+                }
+            }
+            escaped.append('"')
+            return escaped.toString()
         }
     }
 }
